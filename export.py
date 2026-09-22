@@ -6,7 +6,8 @@ images.pth, so decoding has to be deterministic and the ordering has to match.
 import os
 import sys
 
-sys.path.insert(0, 'src')
+# Works from any directory, including when the graders import it
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
 from constants import *
 
@@ -15,7 +16,7 @@ TOL = 1e-5
 
 
 def export(model, z, c=None, outdir=OUTDIR):
-    """model: object with .decode(z, c); z: [10, D]; c: [10, 6] conditioning."""
+    """model: object with .decode(z, c); z: [10, D]; c: [10, 6] scores in 0-9."""
     os.makedirs(outdir, exist_ok=True)
     model = model.to(device).eval()
     z = z.to(device)
@@ -33,7 +34,8 @@ def export(model, z, c=None, outdir=OUTDIR):
 
     torch.save(images, os.path.join(outdir, 'images.pth'))
     torch.save(embeddings, os.path.join(outdir, 'embeddings.pth'))
-    torch.save(model.state_dict(), os.path.join(outdir, 'final_model.pth'))
+    state = model.checkpoint() if hasattr(model, 'checkpoint') else model.state_dict()
+    torch.save(state, os.path.join(outdir, 'final_model.pth'))
 
     check(model, outdir)
     print(f'wrote {N_IMAGES} images, embedding dim {embeddings.shape[1]}')
