@@ -1,0 +1,2 @@
+# Everything else comes from the in5310 venv
+diffusers
