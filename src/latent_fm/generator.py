@@ -1,5 +1,4 @@
-"""
-Sampler and the full generator: embedding -> image.
+"""Sampler and the full generator: embedding -> image.
 
 An embedding is [z, c]: z is the flattened starting noise (768 values),
 c the six scores in 0-9 units. With a fixed number of Euler steps and a
