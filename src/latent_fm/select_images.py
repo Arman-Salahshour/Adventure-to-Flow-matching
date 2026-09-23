@@ -1,5 +1,4 @@
-"""
-Samples candidates for Moira, keeps the best 10 and exports them.
+"""Samples candidates for Moira, keeps the best 10 and exports them.
 
 Best-of-N: draw many cars conditioned on Moira = 9, score them with the
 regressor ensemble, drop near-copies of real cars, keep 10 that are good
@@ -14,7 +13,6 @@ from constants import *
 from generator import build_generator
 from regressor import load_ensemble, ensemble_scores
 
-sys.path.insert(0, ROOT)
 from export import export
 
 N_CANDIDATES = 512
