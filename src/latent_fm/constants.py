@@ -5,12 +5,13 @@ import numpy as np
 import pandas as pd
 import torch.nn as nn
 
-# Repo root, so paths work from any working directory
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# This folder, and the repo root two levels up; paths work from any working directory
+PKG = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(PKG))
 
 # Packages installed by `make deps` go last on the path,
-# so they never shadow what the course venv already has
-sys.path.append(os.path.join(ROOT, '.deps'))
+# so they never shadow what the venv already has
+sys.path.append(os.path.join(PKG, '.deps'))
 
 SEED = 1234
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -20,7 +21,8 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
 DATAPATH = '/projects/ec674/data/'
-OUTDIR = os.path.join(ROOT, 'output')
+# Own subfolder, so this pipeline never overwrites the main deliverable in output/
+OUTDIR = os.path.join(ROOT, 'output', 'latent_fm')
 
 IN_MEAN = [0.485, 0.456, 0.406]
 IN_STD = [0.229, 0.224, 0.225]
