@@ -1,43 +1,33 @@
-PYTHON ?= python
-SRC = src
+VENV = .venv-g07p2
+PYTHON = $(VENV)/bin/python
 
-.PHONY: all deps regressor latents generator samples validate clean distclean
+AE_NF_SRC = src/ae_nf
+VAE_SRC = src/vae
+LATENT_FM_SRC = src/latent_fm
 
-# Full pipeline. Every step skips work whose output already exists in output/.
-all: deps regressor latents generator samples validate
+.PHONY: all setup ae_nf vae latent_fm clean
 
-# diffusers is the only package missing from the course venv.
-# Installed into .deps, which is appended to the path last, so it never
-# replaces anything the venv already provides.
-deps:
-	@$(PYTHON) -c "import sys; sys.path.append('.deps'); import diffusers" 2>/dev/null \
-		|| $(PYTHON) -m pip install --quiet --target .deps diffusers
+all: setup ae_nf
 
-# Three ResNet-18 seeds predicting the six rater scores.
-regressor: deps
-	$(PYTHON) $(SRC)/train_regressor.py
+setup:
+	python3 -m venv $(VENV)
+	$(VENV)/bin/pip install --upgrade pip
+	$(VENV)/bin/pip install -r requirements.txt
 
-# Encodes all cars with the frozen SD VAE into output/latents.pth.
-latents: deps
-	$(PYTHON) $(SRC)/encode_latents.py
+ae_nf: setup
+	PYTHONPATH=$(AE_NF_SRC) $(PYTHON) $(AE_NF_SRC)/train/train_ae.py --latent_dim 128 --run_name final_model
+	PYTHONPATH=$(AE_NF_SRC) $(PYTHON) $(AE_NF_SRC)/train/train_flow.py --ae_run_name final_model --run_name final_model
+	cp output/final_model_flow_checkpoint.pth output/flow_checkpoint.pth
+	cp output/final_model_checkpoint.pth output/final_model.pth
+	PYTHONPATH=$(AE_NF_SRC) $(PYTHON) $(AE_NF_SRC)/generate.py --flow_run_name final_model
 
-# Trains the flow matching U-Net, writes output/fm_ema.pth.
-generator: latents
-	$(PYTHON) $(SRC)/train_fm.py
+vae: setup
+	PYTHONPATH=$(VAE_SRC) $(PYTHON) $(VAE_SRC)/train_vae.py
 
-# Picks the 10 cars, writes images.pth, embeddings.pth and final_model.pth.
-samples: regressor generator
-	$(PYTHON) $(SRC)/select_images.py
+# Latent flow matching. Runs its own Makefile inside src/latent_fm, which
+# writes only to output/latent_fm/. The venv path must be absolute there.
+latent_fm: setup
+	$(MAKE) -C $(LATENT_FM_SRC) PYTHON=$(CURDIR)/$(PYTHON)
 
-# Loads the model the way the graders do and re-decodes the embeddings.
-validate:
-	$(PYTHON) validate_project2.py
-	$(PYTHON) export.py
-
-# Removes only the submission files, keeps every trained model.
 clean:
-	rm -f output/images.pth output/embeddings.pth output/final_model.pth
-
-# Removes everything generated, including trained models.
-distclean: clean
-	rm -rf output/*.pth output/*.csv output/*.json output/*.png .deps
+	rm -rf $(VENV) output/final_model*.pth output/flow_checkpoint.pth output/images.pth output/embeddings.pth output/metrics
